@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tooliyahub - Advanced Code Forum</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <style>
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header { padding: 15px 20px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { margin: 0; font-size: 20px; color: #58a6ff; }
+        .btn-run { background: #238636; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-run:hover { background: #2ea043; }
+        .workspace { display: flex; flex: 1; overflow: hidden; flex-direction: column; }
+        #editor-container { flex: 1; min-height: 50%; }
+        #terminal-container { flex: 1; background: #000; padding: 10px; border-top: 2px solid #30363d; }
+        @media (min-width: 768px) { .workspace { flex-direction: row; } #editor-container, #terminal-container { flex: 1; min-height: 100%; border-top: none; } #terminal-container { border-left: 2px solid #30363d; } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🛠️ Tooliyahub Studio</h1>
+        <button class="btn-run" onclick="runCode()">▶ Run Code</button>
+    </div>
+
+    <div class="workspace">
+        <div id="editor-container"></div>
+        <div id="terminal-container"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+    
+    <script>
+        // Terminal Setup
+        const term = new Terminal({ theme: { background: '#000' }, cursorBlink: true });
+        term.open(document.getElementById('terminal-container'));
+        term.writeln('\x1b[1;34mWelcome to Tooliyahub Terminal...\x1b[0m');
+
+        // Monaco Editor Setup
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' }});
+        let editor;
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: 'print("Hello Tooliyahub!")\n',
+                language: 'python',
+                theme: 'vs-dark',
+                automaticLayout: true
+            });
+        });
+
+        // WebSocket Setup (Connect to Backend)
+        let ws;
+        function connectWS() {
+            ws = new WebSocket('ws://' + window.location.hostname + ':8000/ws/run');
+            ws.onmessage = function(event) { term.writeln(event.data); };
+            ws.onclose = function() { term.writeln('\x1b[1;31mConnection closed.\x1b[0m'); };
+        }
+
+        function runCode() {
+            if(!ws || ws.readyState !== WebSocket.OPEN) connectWS();
+            const code = editor.getValue();
+            term.clear();
+            term.writeln('\x1b[1;33mSending code to server...\x1b[0m');
+            setTimeout(() => { ws.send(code); }, 500); // Send code to backend
+        }
+        
+        // Connect on load
+        connectWS();
+    </script>
+</body>
+</html>
