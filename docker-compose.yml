@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Python Backend Server
+  backend:
+    build: ./backend
+    container_name: tooliyahub_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock 
+    environment:
+      - DATABASE_URL=postgresql://tooliyahub_user:SuperSecretDB123@db:5432/tooliyahub_db
+    depends_on:
+      - db
+
+  # Frontend Nginx Server (Dashboard dikhane ke liye)
+  frontend:
+    image: nginx:alpine
+    container_name: tooliyahub_frontend
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: tooliyahub_db
+    restart: always
+    environment:
+      POSTGRES_USER: tooliyahub_user
+      POSTGRES_PASSWORD: SuperSecretDB123
+      POSTGRES_DB: tooliyahub_db
+    volumes:
+      - tooliyahub_pg_data:/var/lib/postgresql/data
+
+volumes:
+  tooliyahub_pg_data:
